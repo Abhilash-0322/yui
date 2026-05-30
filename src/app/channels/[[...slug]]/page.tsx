@@ -72,6 +72,23 @@ const VideoFeed = ({ stream, className, muted = true }: VideoFeedProps) => {
   );
 };
 
+// Invisible audio element for playing remote peer audio
+const AudioPlayer = ({ stream, muted = false }: { stream: MediaStream | null; muted?: boolean }) => {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  useEffect(() => {
+    if (audioRef.current && stream) {
+      audioRef.current.srcObject = stream;
+      audioRef.current.play().catch(() => {});
+    }
+  }, [stream]);
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.muted = muted;
+  }, [muted]);
+  if (!stream) return null;
+  return <audio ref={audioRef} autoPlay playsInline style={{ display: "none" }} />;
+};
+
+
 export default function DashboardPage({ params }: PageProps) {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -112,8 +129,80 @@ export default function DashboardPage({ params }: PageProps) {
 
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [micStream, setMicStream] = useState<MediaStream | null>(null);
 
-  // Handle turning Camera on/off
+  // Speaking state: set of userIds currently speaking
+  const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
+
+  // VAD (Voice Activity Detection) refs
+  const localVadRef = useRef<{ audioCtx: AudioContext; analyser: AnalyserNode; interval: ReturnType<typeof setInterval> } | null>(null);
+  const remoteVadRefs = useRef<{ [userId: string]: { audioCtx: AudioContext; analyser: AnalyserNode; interval: ReturnType<typeof setInterval> } }>({});
+
+  const stopLocalVAD = () => {
+    if (localVadRef.current) {
+      clearInterval(localVadRef.current.interval);
+      localVadRef.current.audioCtx.close().catch(() => {});
+      localVadRef.current = null;
+    }
+  };
+
+  const startLocalVAD = (stream: MediaStream) => {
+    stopLocalVAD();
+    try {
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.3;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const interval = setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        const isSpeaking = avg > 10; // threshold
+        setSpeakingUsers(prev => {
+          const next = new Set(prev);
+          if (isSpeaking) next.add("self");
+          else next.delete("self");
+          return next;
+        });
+      }, 150);
+      localVadRef.current = { audioCtx, analyser, interval };
+    } catch (_e) { /* no audio context */ }
+  };
+
+  const startRemoteVAD = (userId: string, stream: MediaStream) => {
+    // Clean up existing
+    if (remoteVadRefs.current[userId]) {
+      clearInterval(remoteVadRefs.current[userId].interval);
+      remoteVadRefs.current[userId].audioCtx.close().catch(() => {});
+      delete remoteVadRefs.current[userId];
+    }
+    const audioTracks = stream.getAudioTracks();
+    if (!audioTracks.length) return;
+    try {
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.3;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const interval = setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        setSpeakingUsers(prev => {
+          const next = new Set(prev);
+          if (avg > 8) next.add(userId);
+          else next.delete(userId);
+          return next;
+        });
+      }, 150);
+      remoteVadRefs.current[userId] = { audioCtx, analyser, interval };
+    } catch (_e) { /* no audio context */ }
+  };
+
+  // Handle turning Camera on/off (video-only track; audio handled separately)
   useEffect(() => {
     const toggleCameraStream = async () => {
       if (isCameraOn && activeVoiceChannel) {
@@ -135,6 +224,45 @@ export default function DashboardPage({ params }: PageProps) {
     toggleCameraStream();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCameraOn, activeVoiceChannel]);
+
+  // Capture microphone when joining a voice channel; release when leaving
+  useEffect(() => {
+    if (activeVoiceChannel) {
+      navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+          // Apply initial mute state
+          stream.getAudioTracks().forEach(t => { t.enabled = !isMuted; });
+          setMicStream(stream);
+          startLocalVAD(stream);
+        })
+        .catch(err => console.error("Mic access denied", err));
+    } else {
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        setMicStream(null);
+      }
+      stopLocalVAD();
+      // Clean up all remote VADs
+      Object.values(remoteVadRefs.current).forEach(v => {
+        clearInterval(v.interval);
+        v.audioCtx.close().catch(() => {});
+      });
+      remoteVadRefs.current = {};
+      setSpeakingUsers(new Set());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeVoiceChannel]);
+
+  // Apply mute/unmute to mic track in real time
+  useEffect(() => {
+    if (micStream) {
+      micStream.getAudioTracks().forEach(t => { t.enabled = !isMuted; });
+      // Restart VAD only if unmuted
+      if (!isMuted) startLocalVAD(micStream);
+      else stopLocalVAD();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMuted, micStream]);
 
   // Handle turning Screen Share on/off
   useEffect(() => {
@@ -180,6 +308,15 @@ export default function DashboardPage({ params }: PageProps) {
   const [realParticipants, setRealParticipants] = useState<{ [userId: string]: { username: string; avatarUrl: string; isCameraOn: boolean; isScreenSharing: boolean } }>({});
   const [remoteStreams, setRemoteStreams] = useState<{ [userId: string]: MediaStream }>({});
   const [remoteScreenStreams, setRemoteScreenStreams] = useState<{ [userId: string]: MediaStream }>({});
+  const [remoteAudioStreams, setRemoteAudioStreams] = useState<{ [userId: string]: MediaStream }>({});
+
+  // Mic stream ref for callbacks
+  const micStreamRef = useRef<MediaStream | null>(null);
+  useEffect(() => { micStreamRef.current = micStream; }, [micStream]);
+
+  // Audio peer connection maps
+  const outgoingAudioPeersRef = useRef<{ [peerId: string]: RTCPeerConnection }>({});
+  const incomingAudioPeersRef = useRef<{ [peerId: string]: RTCPeerConnection }>({});
 
   // Pin / fullscreen state — cardId format: "cam:{userId}" | "screen:{userId}" | "screen:self"
   const [pinnedCard, setPinnedCard] = useState<string | null>(null);
@@ -401,6 +538,73 @@ export default function DashboardPage({ params }: PageProps) {
     }
   };
 
+  // ── Audio-only peer connection helpers ───────────────────────────────────
+
+  const initiateOutgoingAudioConnection = async (peerId: string, stream: MediaStream) => {
+    if (!user) return;
+    const existing = outgoingAudioPeersRef.current[peerId];
+    if (existing) { existing.close(); }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ],
+    });
+    outgoingAudioPeersRef.current[peerId] = pc;
+    stream.getAudioTracks().forEach(track => pc.addTrack(track, stream));
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendSignal(peerId, { type: "audio-candidate", connectionType: "outgoing", candidate: event.candidate });
+      }
+    };
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      sendSignal(peerId, { type: "audio-offer", offer });
+    } catch (err) {
+      console.error("initiateOutgoingAudioConnection error", err);
+    }
+  };
+
+  const handleIncomingAudioOffer = async (peerId: string, offer: any) => {
+    if (!user) return;
+    const existing = incomingAudioPeersRef.current[peerId];
+    if (existing) { existing.close(); }
+
+    const pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ],
+    });
+    incomingAudioPeersRef.current[peerId] = pc;
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        sendSignal(peerId, { type: "audio-candidate", connectionType: "incoming", candidate: event.candidate });
+      }
+    };
+
+    pc.ontrack = (event) => {
+      const remoteStream = event.streams[0];
+      if (!remoteStream) return;
+      setRemoteAudioStreams(prev => ({ ...prev, [peerId]: remoteStream }));
+      startRemoteVAD(peerId, remoteStream);
+    };
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      sendSignal(peerId, { type: "audio-answer", answer });
+    } catch (err) {
+      console.error("handleIncomingAudioOffer error", err);
+    }
+  };
+
   const handleMessage = async (from: string, payload: any) => {
     if (!user) return;
     const { type, offer, answer, candidate, connectionType, username, avatarUrl, isCameraOn: peerCam, isScreenSharing: peerScreen } = payload;
@@ -423,6 +627,10 @@ export default function DashboardPage({ params }: PageProps) {
       if (screenStreamRef.current && isScreenSharingRef.current) {
         initiateOutgoingScreenConnection(from, screenStreamRef.current);
       }
+      // Send audio
+      if (micStreamRef.current) {
+        initiateOutgoingAudioConnection(from, micStreamRef.current);
+      }
     } else if (type === "join-ack") {
       setRealParticipants(prev => ({
         ...prev,
@@ -434,14 +642,28 @@ export default function DashboardPage({ params }: PageProps) {
       if (screenStreamRef.current && isScreenSharingRef.current) {
         initiateOutgoingScreenConnection(from, screenStreamRef.current);
       }
+      // Send audio
+      if (micStreamRef.current) {
+        initiateOutgoingAudioConnection(from, micStreamRef.current);
+      }
     } else if (type === "leave") {
       const pcOut = outgoingPeersRef.current[from]; if (pcOut) pcOut.close(); delete outgoingPeersRef.current[from];
       const pcIn = incomingPeersRef.current[from]; if (pcIn) pcIn.close(); delete incomingPeersRef.current[from];
       const pcSOut = outgoingScreenPeersRef.current[from]; if (pcSOut) pcSOut.close(); delete outgoingScreenPeersRef.current[from];
       const pcSIn = incomingScreenPeersRef.current[from]; if (pcSIn) pcSIn.close(); delete incomingScreenPeersRef.current[from];
+      const pcAOut = outgoingAudioPeersRef.current[from]; if (pcAOut) pcAOut.close(); delete outgoingAudioPeersRef.current[from];
+      const pcAIn = incomingAudioPeersRef.current[from]; if (pcAIn) pcAIn.close(); delete incomingAudioPeersRef.current[from];
+      // Clean up remote VAD
+      if (remoteVadRefs.current[from]) {
+        clearInterval(remoteVadRefs.current[from].interval);
+        remoteVadRefs.current[from].audioCtx.close().catch(() => {});
+        delete remoteVadRefs.current[from];
+      }
+      setSpeakingUsers(prev => { const next = new Set(prev); next.delete(from); return next; });
       setRealParticipants(prev => { const c = { ...prev }; delete c[from]; return c; });
       setRemoteStreams(prev => { const c = { ...prev }; delete c[from]; return c; });
       setRemoteScreenStreams(prev => { const c = { ...prev }; delete c[from]; return c; });
+      setRemoteAudioStreams(prev => { const c = { ...prev }; delete c[from]; return c; });
     } else if (type === "offer") {
       handleIncomingOffer(from, offer);
     } else if (type === "answer") {
@@ -457,6 +679,14 @@ export default function DashboardPage({ params }: PageProps) {
       if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(console.error);
     } else if (type === "screen-candidate") {
       const pc = connectionType === "outgoing" ? incomingScreenPeersRef.current[from] : outgoingScreenPeersRef.current[from];
+      if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+    } else if (type === "audio-offer") {
+      handleIncomingAudioOffer(from, offer);
+    } else if (type === "audio-answer") {
+      const pc = outgoingAudioPeersRef.current[from];
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer)).catch(console.error);
+    } else if (type === "audio-candidate") {
+      const pc = connectionType === "outgoing" ? incomingAudioPeersRef.current[from] : outgoingAudioPeersRef.current[from];
       if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
     } else if (type === "state-update") {
       setRealParticipants(prev => {
@@ -513,13 +743,18 @@ export default function DashboardPage({ params }: PageProps) {
       Object.values(incomingPeersRef.current).forEach(pc => pc.close());
       Object.values(outgoingScreenPeersRef.current).forEach(pc => pc.close());
       Object.values(incomingScreenPeersRef.current).forEach(pc => pc.close());
+      Object.values(outgoingAudioPeersRef.current).forEach(pc => pc.close());
+      Object.values(incomingAudioPeersRef.current).forEach(pc => pc.close());
       outgoingPeersRef.current = {};
       incomingPeersRef.current = {};
       outgoingScreenPeersRef.current = {};
       incomingScreenPeersRef.current = {};
+      outgoingAudioPeersRef.current = {};
+      incomingAudioPeersRef.current = {};
       setRealParticipants({});
       setRemoteStreams({});
       setRemoteScreenStreams({});
+      setRemoteAudioStreams({});
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVoiceChannel, user]);
@@ -535,6 +770,15 @@ export default function DashboardPage({ params }: PageProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCameraOn, localStream, user]);
+
+  // When mic stream is ready, push audio to all current peers
+  useEffect(() => {
+    if (!user || !activeVoiceChannel || !micStream) return;
+    Object.keys(realParticipantsRef.current).forEach(peerId => {
+      initiateOutgoingAudioConnection(peerId, micStream);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [micStream, user]);
 
   // When screen share turns on/off, push screen stream to all current peers
   useEffect(() => {
@@ -1034,7 +1278,7 @@ export default function DashboardPage({ params }: PageProps) {
                     return (
                       <div
                         key={idx}
-                        className={`${styles.participantCard} ${p.speaking ? styles.participantCardSpeaking : ""} ${isPinned ? styles.participantCardPinned : ""}`}
+                        className={`${styles.participantCard} ${p.speaking || speakingUsers.has(isSelf ? "self" : p.userId) ? styles.participantCardSpeaking : ""} ${isPinned ? styles.participantCardPinned : ""}`}
                       >
                         {p.video && camStream ? (
                           <div className={styles.participantVideoFeed}>
@@ -1086,7 +1330,10 @@ export default function DashboardPage({ params }: PageProps) {
                     );
                   })()}
 
-                  {/* Remote screen share cards */}
+                  {/* Hidden audio players for remote peers */}
+                  {Object.entries(remoteAudioStreams).map(([peerId, audioStr]) => (
+                    <AudioPlayer key={`audio-${peerId}`} stream={audioStr} muted={isDeafened} />
+                  ))}
                   {Object.entries(remoteScreenStreams).map(([peerId, screenStr]) => {
                     const peerData = realParticipants[peerId];
                     if (!peerData || !screenStr) return null;
