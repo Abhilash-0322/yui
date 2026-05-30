@@ -1,0 +1,196 @@
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  background-image: url("https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png");
+  background-repeat: no-repeat;
+  background-position: 90% 90%;
+  background-size: 300px;
+  background-color: var(--bg-tertiary);
+  overflow: hidden;
+}
+
+.wrapper {
+  background: var(--bg-primary);
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  max-width: 780px;
+  gap: 64px;
+  animation: scaleUp 0.25s cubic-bezier(0.1, 0.8, 0.25, 1);
+}
+
+@media (max-width: 768px) {
+  .wrapper {
+    max-width: 480px;
+    flex-direction: column;
+    gap: 24px;
+  }
+  .qrSection {
+    display: none !important;
+  }
+}
+
+.formSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.title {
+  color: var(--header-primary);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 16px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.required {
+  color: var(--accent-red);
+  margin-left: 4px;
+}
+
+.input {
+  background: var(--bg-secondary-alt);
+  color: var(--text-normal);
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--accent-blurple);
+}
+
+.forgotLink {
+  color: var(--text-link);
+  font-size: 14px;
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.submitBtn {
+  background: var(--accent-blurple);
+  color: white;
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+  margin-top: 4px;
+}
+
+.submitBtn:hover {
+  background: var(--accent-blurple-hover);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--accent-red);
+  font-size: 14px;
+  text-align: center;
+  background: rgba(242, 63, 67, 0.1);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(242, 63, 67, 0.2);
+}
+
+.footer {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.registerLink {
+  color: var(--text-link);
+  margin-left: 4px;
+}
+
+/* QR Code Section */
+.qrSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 240px;
+}
+
+.qrContainer {
+  background: white;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  width: 176px;
+  height: 176px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.qrOverlayLogo {
+  position: absolute;
+  background: var(--bg-tertiary);
+  padding: 4px;
+  border-radius: 4px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qrTitle {
+  color: var(--header-primary);
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.qrSubtitle {
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.4;
+}

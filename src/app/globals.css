@@ -1,0 +1,189 @@
+/* Reset and Globals */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  user-select: none;
+}
+
+:root {
+  /* Discord Theme Colors */
+  --bg-primary: #313338;
+  --bg-secondary: #2b2d31;
+  --bg-secondary-alt: #232428;
+  --bg-tertiary: #1e1f22;
+  --bg-accent: #35373c;
+  
+  --accent-blurple: #5865f2;
+  --accent-blurple-hover: #4752c4;
+  --accent-green: #23a55a;
+  --accent-green-hover: #1a7e44;
+  --accent-yellow: #f0b232;
+  --accent-red: #f23f43;
+  --accent-red-hover: #c93337;
+  
+  --text-normal: #dbdee1;
+  --text-muted: #949ba4;
+  --text-link: #00a8fc;
+  --text-positive: #23a55a;
+  --text-warning: #f0b232;
+  --text-danger: #f23f43;
+  
+  --header-primary: #f2f3f5;
+  --header-secondary: #b5bac1;
+  
+  --interactive-normal: #b5bac1;
+  --interactive-hover: #dbdee1;
+  --interactive-active: #ffffff;
+  --interactive-muted: #4e5058;
+  
+  --background-modifier-hover: rgba(78, 80, 88, 0.3);
+  --background-modifier-selected: rgba(78, 80, 88, 0.6);
+  --background-modifier-active: rgba(78, 80, 88, 0.4);
+  
+  --background-message-hover: rgba(2, 2, 2, 0.08);
+}
+
+body {
+  background: var(--bg-tertiary);
+  color: var(--text-normal);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1a1b1e;
+  border-radius: 4px;
+  border: 2px solid var(--bg-tertiary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #111214;
+}
+
+/* Scrollbar for chat messages */
+.chat-scroll::-webkit-scrollbar {
+  width: 16px;
+}
+
+.chat-scroll::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+  border: 4px solid var(--bg-primary);
+}
+
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: #1a1b1e;
+  border-radius: 8px;
+  border: 4px solid var(--bg-primary);
+}
+
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: #111214;
+}
+
+/* Global utility buttons & inputs */
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+input, textarea, select {
+  outline: none;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* Common Modal Container Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.modal-content {
+  background: var(--bg-primary);
+  border-radius: 4px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  animation: scaleUp 0.15s cubic-bezier(0.1, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Tooltip Simulated Styles */
+.tooltip-trigger {
+  position: relative;
+}
+
+.tooltip-trigger::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: #111214;
+  color: #f2f3f5;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.1s ease-out;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  z-index: 999;
+}
+
+.tooltip-trigger:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}

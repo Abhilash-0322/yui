@@ -1,0 +1,1053 @@
+.container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+/* 1. Server List Sidebar */
+.serverList {
+  width: 72px;
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 8px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  scrollbar-width: none; /* Hide scrollbar */
+}
+
+.serverList::-webkit-scrollbar {
+  display: none;
+}
+
+.serverIconContainer {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.serverPill {
+  position: absolute;
+  left: -12px;
+  width: 8px;
+  background: white;
+  border-radius: 0 4px 4px 0;
+  transition: all 0.2s ease;
+  height: 0px;
+}
+
+.serverIconContainer:hover .serverPill {
+  height: 20px;
+}
+
+.serverIconContainerActive .serverPill {
+  height: 40px !important;
+}
+
+.serverIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  overflow: hidden;
+}
+
+.serverIconContainer:hover .serverIcon {
+  border-radius: 16px;
+  background: var(--accent-blurple);
+  color: white;
+}
+
+.serverIconActive {
+  border-radius: 16px !important;
+  background: var(--accent-blurple) !important;
+  color: white !important;
+}
+
+.divider {
+  width: 32px;
+  height: 2px;
+  background: var(--bg-accent);
+  margin: 4px 0;
+}
+
+.actionIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-primary);
+  color: var(--accent-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.actionIcon:hover {
+  border-radius: 16px;
+  background: var(--accent-green);
+  color: white;
+}
+
+/* 2. Channel Sidebar */
+.channelSidebar {
+  width: 240px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.serverHeader {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  color: var(--header-primary);
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  position: relative;
+}
+
+.serverHeader:hover {
+  background: var(--background-modifier-hover);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 50px;
+  left: 8px;
+  right: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 2px;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: var(--accent-blurple);
+  color: white;
+}
+
+.dropdownItemInvite {
+  color: #949cf7;
+}
+
+.dropdownItemInvite:hover {
+  background: var(--accent-blurple);
+  color: white;
+}
+
+.dropdownItemDanger {
+  color: var(--accent-red);
+}
+
+.dropdownItemDanger:hover {
+  background: var(--accent-red);
+  color: white;
+}
+
+.channelList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 8px;
+}
+
+.categoryGroup {
+  margin-bottom: 16px;
+}
+
+.categoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+}
+
+.categoryHeader:hover {
+  color: var(--interactive-hover);
+}
+
+.channelItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.channelItem:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-hover);
+}
+
+.channelItemActive {
+  background: var(--background-modifier-selected) !important;
+  color: var(--interactive-active) !important;
+}
+
+.channelInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.channelActions {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.channelItem:hover .channelActions {
+  display: flex;
+}
+
+.channelActionIcon {
+  color: var(--text-muted);
+}
+
+.channelActionIcon:hover {
+  color: var(--interactive-active);
+}
+
+/* User Footer Bar */
+.userFooter {
+  height: 52px;
+  background: var(--bg-secondary-alt);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.userInfo:hover {
+  background: var(--background-modifier-hover);
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+}
+
+.statusDot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-secondary-alt);
+}
+
+.statusDotOnline { background: var(--accent-green); }
+.statusDotIdle { background: var(--accent-yellow); }
+.statusDotDnd { background: var(--accent-red); }
+.statusDotOffline { background: var(--text-muted); }
+
+.userText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.username {
+  color: var(--header-primary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userSubtext {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userControls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.controlBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--interactive-normal);
+  transition: color 0.1s ease, background 0.1s ease;
+}
+
+.controlBtn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-hover);
+}
+
+.controlBtnActive {
+  color: var(--accent-red) !important;
+}
+
+/* 3. Main Chat & View Area */
+.chatArea {
+  flex: 1;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chatHeader {
+  height: 48px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  background: var(--bg-primary);
+}
+
+.headerTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--header-primary);
+  font-size: 15px;
+}
+
+.headerTextHash {
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--interactive-normal);
+}
+
+.searchBar {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  width: 144px;
+}
+
+.searchInput {
+  width: 100%;
+  color: var(--text-normal);
+}
+
+.searchInput::placeholder {
+  color: var(--interactive-muted);
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.welcomeBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--bg-accent);
+  margin-bottom: 8px;
+}
+
+.welcomeTitle {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--header-primary);
+}
+
+.welcomeSubtitle {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.welcomeButton {
+  margin-top: 12px;
+  align-self: flex-start;
+  background: var(--accent-blurple);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.welcomeButton:hover {
+  background: var(--accent-blurple-hover);
+}
+
+.messageRow {
+  display: flex;
+  gap: 16px;
+  padding: 4px 16px;
+  margin: 0 -16px;
+  position: relative;
+}
+
+.messageRow:hover {
+  background: var(--background-message-hover);
+}
+
+.messageAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+}
+
+.messageContentWrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.messageHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.messageSender {
+  font-weight: 600;
+  color: var(--header-primary);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.messageSender:hover {
+  text-decoration: underline;
+}
+
+.messageTime {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.messageContent {
+  color: var(--text-normal);
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.messageEditArea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.messageEditInput {
+  background: var(--bg-secondary-alt);
+  color: var(--text-normal);
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-blurple);
+  font-size: 15px;
+  width: 100%;
+}
+
+.messageEditActions {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.messageEditBtnCancel {
+  color: var(--text-muted);
+}
+
+.messageEditBtnSave {
+  color: var(--text-link);
+}
+
+/* Hover Actions menu */
+.messageActions {
+  position: absolute;
+  right: 16px;
+  top: -12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--bg-accent);
+  border-radius: 4px;
+  display: none;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.messageRow:hover .messageActions {
+  display: flex;
+}
+
+.msgActionBtn {
+  padding: 6px 10px;
+  color: var(--interactive-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.msgActionBtn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-active);
+}
+
+.msgActionBtnDanger:hover {
+  background: var(--accent-red);
+  color: white;
+}
+
+/* Chat Input Area */
+.inputContainer {
+  padding: 0 16px 24px 16px;
+  background: var(--bg-primary);
+}
+
+.inputWrapper {
+  background: var(--bg-secondary-alt);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.inputPlus {
+  color: var(--interactive-normal);
+  cursor: pointer;
+}
+
+.inputPlus:hover {
+  color: var(--interactive-hover);
+}
+
+.chatInput {
+  flex: 1;
+  color: var(--text-normal);
+  font-size: 15px;
+}
+
+.chatInput::placeholder {
+  color: var(--interactive-muted);
+}
+
+/* 4. Active Voice Area Grid */
+.voiceGridContainer {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px);
+  background: #111214;
+  overflow: hidden;
+  position: relative;
+}
+
+.voiceGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.participantCard {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  border: 2px solid transparent;
+}
+
+.participantCardSpeaking {
+  border-color: var(--accent-green) !important;
+}
+
+.participantVideoFeed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1e1f22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.participantAvatarLarge {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.participantNameTag {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 2;
+}
+
+/* Hover action buttons (Pin / Fullscreen) */
+.cardActions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  z-index: 10;
+}
+
+.participantCard:hover .cardActions,
+.pinnedFocus:hover .cardActions {
+  opacity: 1;
+}
+
+.cardActionBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.72);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.1s ease;
+  border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(4px);
+}
+
+.cardActionBtn:hover {
+  background: rgba(88, 101, 242, 0.85);
+  transform: scale(1.08);
+}
+
+.participantCardPinned {
+  border-color: var(--accent-blurple) !important;
+  box-shadow: 0 0 0 2px rgba(88, 101, 242, 0.4);
+}
+
+/* ── Pinned layout (focus + strip) ── */
+.voiceGridPinned {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.pinnedFocus {
+  flex: 1;
+  position: relative;
+  background: #111214;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-right: 1px solid #2e3035;
+}
+
+.voiceGridStrip {
+  width: 220px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  overflow-y: auto;
+  background: #1a1b1e;
+}
+
+.voiceGridStrip .participantCard {
+  aspect-ratio: 16/9;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+/* Inner grid wrapper (no pinned) */
+.voiceGridInner {
+  display: contents;
+}
+
+/* ── Fullscreen overlay ── */
+.fullscreenOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fullscreenVideo {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fsCloseBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.15s ease;
+}
+
+.fsCloseBtn:hover {
+  background: rgba(237, 66, 69, 0.85);
+}
+
+
+.voiceControlsBar {
+  height: 80px;
+  background: #1e1f22;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.voiceControlBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--bg-secondary);
+  color: var(--interactive-normal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.voiceControlBtn:hover {
+  background: var(--bg-accent);
+  color: white;
+}
+
+.voiceControlBtnActive {
+  background: white !important;
+  color: black !important;
+}
+
+.voiceControlBtnDanger {
+  background: var(--accent-red) !important;
+  color: white !important;
+}
+
+.voiceControlBtnDanger:hover {
+  background: var(--accent-red-hover) !important;
+}
+
+/* 5. Members Sidebar */
+.membersSidebar {
+  width: 240px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 8px;
+  overflow-y: auto;
+  border-left: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 992px) {
+  .membersSidebar {
+    display: none;
+  }
+}
+
+.memberGroupTitle {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 8px 8px;
+}
+
+.memberRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.memberRow:hover {
+  background: var(--background-modifier-hover);
+  color: var(--interactive-hover);
+}
+
+.memberName {
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memberNameAdmin {
+  color: #f0b232;
+}
+
+.memberNameMod {
+  color: #a272fc;
+}
+
+.memberCustomStatus {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* Direct Messages specific classes */
+.dmContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: var(--bg-primary);
+  text-align: center;
+  padding: 40px;
+}
+
+.dmLogo {
+  color: var(--accent-blurple);
+  margin-bottom: 24px;
+  animation: bounce 2s infinite ease-in-out;
+}
+
+.dmTitle {
+  color: var(--header-primary);
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.dmText {
+  color: var(--text-muted);
+  font-size: 16px;
+  max-width: 480px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.dmActionButton {
+  background: var(--accent-blurple);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 15px;
+  box-shadow: 0 4px 12px rgba(88, 101, 242, 0.35);
+  transition: background 0.15s ease;
+}
+
+.dmActionButton:hover {
+  background: var(--accent-blurple-hover);
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.voiceConnectionBar {
+  background: var(--bg-secondary-alt);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.voiceConnInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  cursor: pointer;
+  flex: 1;
+}
+
+.voiceConnInfo:hover .voiceConnChannel {
+  text-decoration: underline;
+  color: var(--interactive-hover);
+}
+
+.voiceConnStatus {
+  color: var(--accent-green);
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voiceConnIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green);
+  animation: pulse-green 2s infinite;
+}
+
+.voiceConnChannel {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+.voiceConnControls {
+  display: flex;
+  align-items: center;
+}
+
+.voiceConnBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--interactive-normal);
+  transition: color 0.1s ease, background 0.1s ease;
+}
+
+.voiceConnBtn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--accent-red);
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
