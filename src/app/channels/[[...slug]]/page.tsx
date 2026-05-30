@@ -64,7 +64,7 @@ const VideoFeed = ({ stream, className, muted = true }: VideoFeedProps) => {
     <video
       ref={videoRef}
       className={className}
-      muted={muted}
+      muted={true} // Unconditionally mute video feeds; audio handled by AudioPlayer
       playsInline
       autoPlay
       style={{ width: "100%", height: "100%", objectFit: "cover" }}
@@ -818,19 +818,8 @@ export default function DashboardPage({ params }: PageProps) {
       userId: peerId
     }));
 
-    const simulatedList = voiceParticipants
-      .filter(p => p.username !== user.username && !realList.some(r => r.username === p.username))
-      .map(p => ({
-        username: p.username,
-        avatarUrl: p.avatarUrl,
-        speaking: p.speaking,
-        video: p.video,
-        isSelf: false,
-        userId: "simulated-" + p.username
-      }));
-
-    return [self, ...realList, ...simulatedList];
-  }, [voiceParticipants, realParticipants, user, isCameraOn]);
+    return [self, ...realList];
+  }, [realParticipants, user, isCameraOn]);
 
   // 1. Resolve Next.js 16 params & sync state with URL route
   useEffect(() => {
@@ -1270,8 +1259,7 @@ export default function DashboardPage({ params }: PageProps) {
                 <div className={pinnedCard ? styles.voiceGridStrip : styles.voiceGridInner}>
                   {displayedParticipants.map((p, idx) => {
                     const isSelf = p.isSelf;
-                    const isSimulated = p.userId.toString().startsWith("simulated-");
-                    const camStream = isSelf ? localStream : (!isSimulated ? remoteStreams[p.userId] ?? null : null);
+                    const camStream = isSelf ? localStream : (remoteStreams[p.userId] ?? null);
                     const cardId = `cam:${p.userId}`;
                     const isPinned = pinnedCard === cardId;
 
