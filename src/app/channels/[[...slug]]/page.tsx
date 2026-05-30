@@ -269,20 +269,28 @@ export default function DashboardPage({ params }: PageProps) {
     const toggleScreenStream = async () => {
       if (isScreenSharing && activeVoiceChannel) {
         try {
+          screenShareStopInFlightRef.current = false;
           const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
           setScreenStream(stream);
-          
-          stream.getVideoTracks()[0].onended = () => {
-            toggleScreenShare();
-          };
+
+          const screenTrack = stream.getVideoTracks()[0];
+          if (screenTrack) {
+            screenTrack.onended = () => {
+              if (screenShareStopInFlightRef.current) return;
+              stopLocalScreenShare(true);
+              toggleScreenShare();
+            };
+          }
         } catch (err) {
           console.error("Error sharing screen", err);
-          toggleScreenShare();
+          if (isScreenSharingRef.current) {
+            stopLocalScreenShare(true);
+            toggleScreenShare();
+          }
         }
       } else {
-        if (screenStream) {
-          screenStream.getTracks().forEach((track) => track.stop());
-          setScreenStream(null);
+        if (screenStreamRef.current) {
+          stopLocalScreenShare(true);
         }
       }
     };
@@ -299,10 +307,10 @@ export default function DashboardPage({ params }: PageProps) {
         setLocalStream(null);
       }
       if (screenStream) {
-        screenStream.getTracks().forEach((track) => track.stop());
-        setScreenStream(null);
+        stopLocalScreenShare(false);
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeVoiceChannel]);
 
   const [realParticipants, setRealParticipants] = useState<{ [userId: string]: { username: string; avatarUrl: string; isCameraOn: boolean; isScreenSharing: boolean } }>({});
@@ -367,6 +375,7 @@ export default function DashboardPage({ params }: PageProps) {
   // Screen share peer connection maps (completely independent from camera)
   const outgoingScreenPeersRef = useRef<{ [peerId: string]: RTCPeerConnection }>({});
   const incomingScreenPeersRef = useRef<{ [peerId: string]: RTCPeerConnection }>({});
+  const screenShareStopInFlightRef = useRef(false);
 
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastPollTimeRef = useRef<number>(Date.now());
@@ -405,6 +414,66 @@ export default function DashboardPage({ params }: PageProps) {
       console.error("sendSignal error", e);
     }
   };
+
+  function closePeerConnection(
+    ref: React.MutableRefObject<{ [peerId: string]: RTCPeerConnection }>,
+    peerId: string
+  ) {
+    const pc = ref.current[peerId];
+    if (!pc) return;
+    pc.onicecandidate = null;
+    pc.ontrack = null;
+    pc.onconnectionstatechange = null;
+    pc.oniceconnectionstatechange = null;
+    pc.close();
+    delete ref.current[peerId];
+  }
+
+  function clearFloatingCard(cardId: string) {
+    setPinnedCard(prev => prev === cardId ? null : prev);
+    setFullscreenCard(prev => prev === cardId ? null : prev);
+  }
+
+  function cleanupRemoteScreenShare(peerId: string) {
+    closePeerConnection(incomingScreenPeersRef, peerId);
+    closePeerConnection(outgoingScreenPeersRef, peerId);
+    clearFloatingCard(`screen:${peerId}`);
+    setRemoteScreenStreams(prev => {
+      if (!prev[peerId]) return prev;
+      const next = { ...prev };
+      delete next[peerId];
+      return next;
+    });
+    setRealParticipants(prev => {
+      if (!prev[peerId]) return prev;
+      return {
+        ...prev,
+        [peerId]: {
+          ...prev[peerId],
+          isScreenSharing: false,
+        },
+      };
+    });
+  }
+
+  function stopLocalScreenShare(notifyPeers: boolean) {
+    screenShareStopInFlightRef.current = true;
+    const currentScreenStream = screenStreamRef.current;
+    if (currentScreenStream) {
+      currentScreenStream.getVideoTracks().forEach(track => {
+        track.onended = null;
+      });
+      currentScreenStream.getTracks().forEach(track => track.stop());
+    }
+    setScreenStream(null);
+    screenStreamRef.current = null;
+    Object.keys(outgoingScreenPeersRef.current).forEach(peerId => {
+      closePeerConnection(outgoingScreenPeersRef, peerId);
+    });
+    if (notifyPeers) {
+      sendSignal(null, { type: "screen-share-stopped" });
+    }
+  }
 
   // ── Peer connection helpers ───────────────────────────────────────────────
 
@@ -506,7 +575,7 @@ export default function DashboardPage({ params }: PageProps) {
   const handleIncomingScreenOffer = async (peerId: string, offer: any) => {
     if (!user) return;
     const existing = incomingScreenPeersRef.current[peerId];
-    if (existing) { existing.close(); }
+    if (existing) { closePeerConnection(incomingScreenPeersRef, peerId); }
 
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -525,7 +594,16 @@ export default function DashboardPage({ params }: PageProps) {
     pc.ontrack = (event) => {
       const remoteStream = event.streams[0];
       if (!remoteStream) return;
+      remoteStream.getVideoTracks().forEach(track => {
+        track.onended = () => cleanupRemoteScreenShare(peerId);
+      });
       setRemoteScreenStreams(prev => ({ ...prev, [peerId]: remoteStream }));
+    };
+
+    pc.onconnectionstatechange = () => {
+      if (["failed", "disconnected", "closed"].includes(pc.connectionState)) {
+        cleanupRemoteScreenShare(peerId);
+      }
     };
 
     try {
@@ -647,12 +725,12 @@ export default function DashboardPage({ params }: PageProps) {
         initiateOutgoingAudioConnection(from, micStreamRef.current);
       }
     } else if (type === "leave") {
-      const pcOut = outgoingPeersRef.current[from]; if (pcOut) pcOut.close(); delete outgoingPeersRef.current[from];
-      const pcIn = incomingPeersRef.current[from]; if (pcIn) pcIn.close(); delete incomingPeersRef.current[from];
-      const pcSOut = outgoingScreenPeersRef.current[from]; if (pcSOut) pcSOut.close(); delete outgoingScreenPeersRef.current[from];
-      const pcSIn = incomingScreenPeersRef.current[from]; if (pcSIn) pcSIn.close(); delete incomingScreenPeersRef.current[from];
-      const pcAOut = outgoingAudioPeersRef.current[from]; if (pcAOut) pcAOut.close(); delete outgoingAudioPeersRef.current[from];
-      const pcAIn = incomingAudioPeersRef.current[from]; if (pcAIn) pcAIn.close(); delete incomingAudioPeersRef.current[from];
+      closePeerConnection(outgoingPeersRef, from);
+      closePeerConnection(incomingPeersRef, from);
+      closePeerConnection(outgoingScreenPeersRef, from);
+      closePeerConnection(incomingScreenPeersRef, from);
+      closePeerConnection(outgoingAudioPeersRef, from);
+      closePeerConnection(incomingAudioPeersRef, from);
       // Clean up remote VAD
       if (remoteVadRefs.current[from]) {
         clearInterval(remoteVadRefs.current[from].interval);
@@ -660,6 +738,8 @@ export default function DashboardPage({ params }: PageProps) {
         delete remoteVadRefs.current[from];
       }
       setSpeakingUsers(prev => { const next = new Set(prev); next.delete(from); return next; });
+      clearFloatingCard(`cam:${from}`);
+      clearFloatingCard(`screen:${from}`);
       setRealParticipants(prev => { const c = { ...prev }; delete c[from]; return c; });
       setRemoteStreams(prev => { const c = { ...prev }; delete c[from]; return c; });
       setRemoteScreenStreams(prev => { const c = { ...prev }; delete c[from]; return c; });
@@ -680,6 +760,8 @@ export default function DashboardPage({ params }: PageProps) {
     } else if (type === "screen-candidate") {
       const pc = connectionType === "outgoing" ? incomingScreenPeersRef.current[from] : outgoingScreenPeersRef.current[from];
       if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(console.error);
+    } else if (type === "screen-share-stopped") {
+      cleanupRemoteScreenShare(from);
     } else if (type === "audio-offer") {
       handleIncomingAudioOffer(from, offer);
     } else if (type === "audio-answer") {
@@ -693,6 +775,9 @@ export default function DashboardPage({ params }: PageProps) {
         if (!prev[from]) return prev;
         return { ...prev, [from]: { ...prev[from], isCameraOn: !!peerCam, isScreenSharing: !!peerScreen } };
       });
+      if (!peerScreen) {
+        cleanupRemoteScreenShare(from);
+      }
     }
   };
 
@@ -789,14 +874,26 @@ export default function DashboardPage({ params }: PageProps) {
         initiateOutgoingScreenConnection(peerId, screenStream);
       });
     } else if (!isScreenSharing) {
-      // Tear down outgoing screen connections when stopped
-      Object.keys(outgoingScreenPeersRef.current).forEach(peerId => {
-        outgoingScreenPeersRef.current[peerId].close();
-        delete outgoingScreenPeersRef.current[peerId];
-      });
+      stopLocalScreenShare(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isScreenSharing, screenStream, user]);
+
+  useEffect(() => {
+    if (!pinnedCard) return;
+    if (!resolveStream(pinnedCard)) {
+      setPinnedCard(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pinnedCard, localStream, screenStream, remoteStreams, remoteScreenStreams]);
+
+  useEffect(() => {
+    if (!fullscreenCard) return;
+    if (!resolveStream(fullscreenCard)) {
+      closeFullscreen();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fullscreenCard, localStream, screenStream, remoteStreams, remoteScreenStreams]);
 
   const displayedParticipants = React.useMemo(() => {
     if (!user) return [];
@@ -1324,7 +1421,7 @@ export default function DashboardPage({ params }: PageProps) {
                   ))}
                   {Object.entries(remoteScreenStreams).map(([peerId, screenStr]) => {
                     const peerData = realParticipants[peerId];
-                    if (!peerData || !screenStr) return null;
+                    if (!peerData?.isScreenSharing || !screenStr) return null;
                     const cardId = `screen:${peerId}`;
                     const isPinned = pinnedCard === cardId;
                     return (
